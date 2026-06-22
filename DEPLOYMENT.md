@@ -10,16 +10,27 @@ To deploy this application successfully, you have two recommended paths:
 
 ---
 
-## Path 1: Deploy Frontend to Vercel, Backend to a VPS/PaaS (Recommended for SQLite)
+## Path 1: Deploy Frontend to Vercel, Backend to a VPS (Recommended for SQLite)
 
-If you want to keep your current SQLite database setup without changing any code, you should host your frontend on Vercel, and host your Node/Express backend on a service that provides persistent storage (like Render, Railway, or Fly.io).
+Because your backend uses **SQLite** for its database and **local file storage** for product images, it requires a **Persistent Disk Volume**. Without a disk, your database and uploaded images will be erased every time the server restarts.
 
-### 1. Deploy the Backend
-1. Create a new service on **Render**, **Railway**, or **Fly.io**.
-2. Connect your GitHub repository.
-3. Set the Root Directory to `./` and the Start Command to `npm start --prefix server` (or `node server/server.js`).
-4. Ensure the service has a **Persistent Disk Volume** mounted to the `server/` directory so the `chicken_shop.db` file isn't lost on restarts.
-5. Note your live backend URL (e.g., `https://rahim-chicken-api.onrender.com`).
+**Fly.io** is a great option (up to 3GB free), but it requires a credit card for account verification. Here are other free persistent alternatives:
+
+#### Alternative A: Alwaysdata (100MB Free Persistent Hosting)
+- **Alwaysdata** offers a 100MB free hosting tier that supports Node.js and SQLite.
+- Because it uses shared server environments, **all files written to the disk are naturally persistent** without having to mount separate volumes. 100MB is plenty for a lightweight SQLite database and menu files.
+- Sign up at [alwaysdata.com](https://www.alwaysdata.com/) and follow their Node.js deployment guide.
+
+#### Alternative B: Oracle Cloud Free Tier VPS (50GB Free Storage)
+- Oracle Cloud offers an **Always Free tier** that includes two AMD Compute instances (VMs).
+- It comes with **50 GB of persistent block volume storage** for free.
+- You can launch a standard Ubuntu VM, install Node.js, clone your Git repository, and run your SQLite backend. It will never reset or lose files.
+
+#### Alternative C: The "No-Disk" Architecture (Render Free Tier + Supabase + Cloudinary)
+If you want to host on Render's free tier but don't want to pay for a persistent disk, you can modify the app to be **stateless**:
+1. **Database**: Use a free PostgreSQL database on [Supabase](https://supabase.com/) or [Neon](https://neon.tech/) instead of SQLite.
+2. **Images**: Modify your image upload endpoint in `server.js` to upload product images to [Cloudinary](https://cloudinary.com/) (which offers a generous free tier) instead of saving them locally.
+3. Since no database or images are stored locally, you can deploy the backend on Render's free tier without needing any persistent disk!
 
 ### 2. Deploy the Frontend to Vercel
 1. In your `vite.config.js`, change the proxy target to point to your live backend URL instead of `http://localhost:3001` (or remove the proxy entirely and configure your `App.jsx` fetch calls to use an environment variable like `import.meta.env.VITE_API_URL`).
