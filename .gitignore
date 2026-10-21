@@ -22,3 +22,23 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Backend runtime artifacts
+server/node_modules
+server/uploads/*
+!server/uploads/.gitkeep
+server/*.db
+server/*.db-journal
+server/*.db-wal
+server/*.db-shm
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# Tooling caches
+.vercel
+.cache
+coverage
+*.tsbuildinfo

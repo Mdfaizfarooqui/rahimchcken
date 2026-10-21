@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function TrackView({ orders }) {
   if (orders.length === 0) {
     return (
@@ -27,13 +25,6 @@ export default function TrackView({ orders }) {
       return 'timeline-step'; // waiting/preparing
     }
     return 'timeline-step';
-  };
-
-  const getProgressPercentage = (status) => {
-    if (status === 'waiting') return '15%';
-    if (status === 'preparing') return '60%';
-    if (status === 'done') return '100%';
-    return '0%';
   };
 
   return (

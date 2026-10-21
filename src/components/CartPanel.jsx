@@ -1,9 +1,7 @@
-import React from 'react';
-
 export default function CartPanel({ isOpen, toggleCart, cart, changeQty, onCheckout, isLoggedIn, onRequireLogin }) {
-  const cartEntries = Object.entries(cart).filter(([_, item]) => item.qty > 0);
-  const totalItems = cartEntries.reduce((sum, [_, item]) => sum + item.qty, 0);
-  const totalPrice = cartEntries.reduce((sum, [_, item]) => sum + (item.price * item.qty), 0);
+  const cartEntries = Object.entries(cart).filter(([, item]) => item.qty > 0);
+  const totalItems = cartEntries.reduce((sum, [, item]) => sum + item.qty, 0);
+  const totalPrice = cartEntries.reduce((sum, [, item]) => sum + (item.price * item.qty), 0);
 
   const handleSubmit = (e) => {
     e.preventDefault();

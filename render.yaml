@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: fresh-cut-server
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: OWNER_PIN
+        sync: false
+      - key: AUTH_TOKEN
+        sync: false

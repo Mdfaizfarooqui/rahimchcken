@@ -2,6 +2,13 @@
 
 This guide explains how to deploy **Rahim's Chicken**, which consists of a React (Vite) frontend and an Express + SQLite backend.
 
+> [!TIP]
+> **Looking for automated deployments?** The repo ships with a complete GitHub Actions
+> pipeline that builds, tests and ships both the frontend (Vercel) and the backend
+> (Render) on every push to `main`. See [README.md → CI/CD](README.md#cicd) for the
+> one-time setup (required secrets, Render blueprint, health checks). This page covers
+> the manual and alternative hosting paths.
+
 > [!WARNING]
 > **Important Architecture Note for Vercel**
 > Vercel is designed for static frontends and stateless serverless functions. Because Vercel's environment is serverless and its filesystem is read-only, **local SQLite databases (`chicken_shop.db`) will not persist data across requests.** Any changes made (e.g., placing orders or adding users) will be erased when the serverless function spins down. 
@@ -31,6 +38,22 @@ If you want to host on Render's free tier but don't want to pay for a persistent
 1. **Database**: Use a free PostgreSQL database on [Supabase](https://supabase.com/) or [Neon](https://neon.tech/) instead of SQLite.
 2. **Images**: Modify your image upload endpoint in `server.js` to upload product images to [Cloudinary](https://cloudinary.com/) (which offers a generous free tier) instead of saving them locally.
 3. Since no database or images are stored locally, you can deploy the backend on Render's free tier without needing any persistent disk!
+
+#### Deploying the Backend to Render
+The repo contains a `render.yaml` blueprint, so the backend can be created with
+*New → Blueprint* → point at this repository. Render will prompt for the `OWNER_PIN`
+and `AUTH_TOKEN` environment variables, and the service is configured with:
+
+| Setting | Value |
+| --- | --- |
+| Root directory | `server` |
+| Build command | `npm ci` |
+| Start command | `npm start` |
+| Health check path | `/api/health` |
+| Node version | `20` |
+
+The health endpoint (`GET /api/health`) is what Render polls and what the CD pipeline
+polls after each deploy to confirm the release is live.
 
 ### 2. Deploy the Frontend to Vercel
 1. In your `vite.config.js`, change the proxy target to point to your live backend URL instead of `http://localhost:3001` (or remove the proxy entirely and configure your `App.jsx` fetch calls to use an environment variable like `import.meta.env.VITE_API_URL`).

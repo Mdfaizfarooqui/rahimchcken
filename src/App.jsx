@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ShopView from './components/ShopView';
 import CartPanel from './components/CartPanel';
 import TrackView from './components/TrackView';
@@ -27,16 +27,66 @@ export default function App() {
   // Toast state
   const [toast, setToast] = useState({ show: false, message: '' });
 
-  // ─── Toast helper ──────────────────────────────────────────────────────────
-  const showToast = (message) => {
+  // ─── Toast helper ───────────────────────────────────────────────────────────
+  const showToast = useCallback((message) => {
     setToast({ show: true, message });
     setTimeout(() => {
       setToast({ show: false, message: '' });
     }, 2500);
-  };
+  }, []);
+
+  // ─── Customer Auth ────────────────────────────────────────────────────────
+  const handleUserAuth = useCallback((data) => {
+    setUserToken(data.token);
+    setUsername(data.username);
+    localStorage.setItem('fc_user_token', data.token);
+    localStorage.setItem('fc_username', data.username);
+    showToast(`Welcome, ${data.username}!`);
+    setActiveView('shop');
+  }, [showToast]);
+
+  const handleUserLogout = useCallback(() => {
+    setUserToken('');
+    setUsername('');
+    localStorage.removeItem('fc_user_token');
+    localStorage.removeItem('fc_username');
+    setMyOrders([]);
+    if (activeView === 'track') setActiveView('shop');
+    showToast('Logged out successfully');
+  }, [activeView, showToast]);
+
+  // ─── Owner Auth ────────────────────────────────────────────────────────────
+  const ownerLogin = useCallback(async (pin, callback) => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOwnerToken(data.token);
+        localStorage.setItem('fc_owner_token', data.token);
+        callback(null);
+        showToast('Dashboard unlocked');
+      } else {
+        const data = await res.json();
+        callback(data.error || 'Incorrect PIN');
+      }
+    } catch {
+      callback('Server connection error');
+    }
+  }, [showToast]);
+
+  const ownerLogout = useCallback(() => {
+    setOwnerToken('');
+    localStorage.removeItem('fc_owner_token');
+    setOwnerOrders([]);
+    showToast('Logged out of owner panel');
+  }, [showToast]);
 
   // ─── Fetch APIs ────────────────────────────────────────────────────────────
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const res = await fetch('/api/products');
       if (res.ok) {
@@ -48,9 +98,9 @@ export default function App() {
     } finally {
       setLoadingProducts(false);
     }
-  };
+  }, []);
 
-  const fetchQueueCount = async () => {
+  const fetchQueueCount = useCallback(async () => {
     try {
       const res = await fetch('/api/queue/stats');
       if (res.ok) {
@@ -63,9 +113,9 @@ export default function App() {
     } catch (err) {
       console.error('Error fetching queue count:', err);
     }
-  };
+  }, [ownerToken]);
 
-  const fetchMyOrders = async () => {
+  const fetchMyOrders = useCallback(async () => {
     if (!userToken) return;
     try {
       const res = await fetch('/api/orders/user/all', {
@@ -80,9 +130,9 @@ export default function App() {
     } catch (err) {
       console.error('Error fetching my orders:', err);
     }
-  };
+  }, [userToken, handleUserLogout]);
 
-  const fetchOwnerData = async () => {
+  const fetchOwnerData = useCallback(async () => {
     if (!ownerToken) return;
     try {
       const statsRes = await fetch('/api/queue/stats');
@@ -90,7 +140,7 @@ export default function App() {
         const statsData = await statsRes.json();
         setOwnerStats(statsData);
       }
-      
+
       const ordersRes = await fetch('/api/orders', {
         headers: { 'Authorization': `Bearer ${ownerToken}` }
       });
@@ -104,30 +154,30 @@ export default function App() {
     } catch (err) {
       console.error('Error fetching owner data:', err);
     }
-  };
+  }, [ownerToken, ownerLogout, showToast]);
 
   // ─── Initial Load & SSE Sync ────────────────────────────────────────────────
   useEffect(() => {
     fetchProducts();
     fetchQueueCount();
-  }, []);
+  }, [fetchProducts, fetchQueueCount]);
 
   useEffect(() => {
     if (activeView === 'track') {
       fetchMyOrders();
     }
-  }, [activeView, userToken]);
+  }, [activeView, fetchMyOrders]);
 
   useEffect(() => {
     if (ownerToken) {
       fetchOwnerData();
     }
-  }, [ownerToken, activeView]);
+  }, [ownerToken, activeView, fetchOwnerData]);
 
   useEffect(() => {
     const sse = new EventSource('/api/events');
     
-    sse.onmessage = (event) => {};
+    sse.onmessage = () => {};
 
     sse.addEventListener('order_update', (event) => {
       try {
@@ -147,31 +197,11 @@ export default function App() {
             else if (data.status === 'cancelled') showToast(`⚠️ Order ${data.orderId} was cancelled.`);
           }
         }
-      } catch (err) {}
+      } catch {}
     });
 
     return () => sse.close();
-  }, [userToken, ownerToken, activeView]);
-
-  // ─── Customer Auth ────────────────────────────────────────────────────────
-  const handleUserAuth = (data) => {
-    setUserToken(data.token);
-    setUsername(data.username);
-    localStorage.setItem('fc_user_token', data.token);
-    localStorage.setItem('fc_username', data.username);
-    showToast(`Welcome, ${data.username}!`);
-    setActiveView('shop');
-  };
-
-  const handleUserLogout = () => {
-    setUserToken('');
-    setUsername('');
-    localStorage.removeItem('fc_user_token');
-    localStorage.removeItem('fc_username');
-    setMyOrders([]);
-    if (activeView === 'track') setActiveView('shop');
-    showToast('Logged out successfully');
-  };
+  }, [userToken, ownerToken, activeView, showToast, fetchQueueCount, fetchOwnerData, fetchMyOrders]);
 
   // ─── Shopping Cart Operations ───────────────────────────────────────────────
   const addToCart = (product) => {
@@ -227,41 +257,12 @@ export default function App() {
         showToast(err.error || 'Failed to place order.');
         if (res.status === 401) handleUserLogout();
       }
-    } catch (err) {
+    } catch {
       showToast('Connection error. Could not place order.');
     }
   };
 
   // ─── Owner Operations ──────────────────────────────────────────────────────
-  const ownerLogin = async (pin, callback) => {
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setOwnerToken(data.token);
-        localStorage.setItem('fc_owner_token', data.token);
-        callback(null);
-        showToast('Dashboard unlocked');
-      } else {
-        const data = await res.json();
-        callback(data.error || 'Incorrect PIN');
-      }
-    } catch (err) {
-      callback('Server connection error');
-    }
-  };
-
-  const ownerLogout = () => {
-    setOwnerToken('');
-    localStorage.removeItem('fc_owner_token');
-    setOwnerOrders([]);
-    showToast('Logged out of owner panel');
-  };
-
   const updateOrderStatus = async (orderId, status) => {
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
@@ -301,7 +302,7 @@ export default function App() {
       } else {
         showToast('Failed to update product details');
       }
-    } catch (err) {}
+    } catch {}
   };
 
   const uploadImage = async (productId, formData) => {
@@ -317,7 +318,7 @@ export default function App() {
       } else {
         showToast('Failed to upload image.');
       }
-    } catch (err) {}
+    } catch {}
   };
 
   const addProduct = async (prodData, callback) => {
@@ -338,7 +339,7 @@ export default function App() {
         showToast('Failed to add new menu cut.');
         callback(false);
       }
-    } catch (err) {
+    } catch {
       callback(false);
     }
   };
@@ -385,7 +386,7 @@ export default function App() {
     <div>
       <nav>
         <div className="nav-brand" onClick={() => setActiveView('shop')} style={{ cursor: 'pointer' }}>
-          Rahim's Chicken <span>Premium Raw Cuts</span>
+          Rahim&apos;s Chicken <span>Premium Raw Cuts</span>
         </div>
         <div className="nav-actions">
           <button 

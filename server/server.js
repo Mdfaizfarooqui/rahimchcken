@@ -7,14 +7,14 @@ const { initDB, dbRun, dbAll, dbGet } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const OWNER_PIN = '1234';
-const AUTH_TOKEN = 'fc_owner_secure_token_5819';
+const OWNER_PIN = process.env.OWNER_PIN || '1234';
+const AUTH_TOKEN = process.env.AUTH_TOKEN || 'fc_owner_secure_token_5819';
 const MINS_PER_ORDER = 8;
 
 // Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, 'uploads');
+const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 // Config Multer storage for CMS image uploads
@@ -90,6 +90,11 @@ app.get('/api/events', (req, res) => {
   req.on('close', () => {
     sseClients = sseClients.filter(c => c.id !== client.id);
   });
+});
+
+// Health check endpoint (used by Render health checks and post-deploy smoke tests)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', service: 'fresh-cut-server', uptime: process.uptime() });
 });
 
 // ─── AUTH ENDPOINT ───────────────────────────────────────────────────────────
@@ -371,10 +376,18 @@ app.get('/api/queue/stats', async (req, res) => {
 });
 
 // Startup Server
-initDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Fresh Cut Server running on http://localhost:${PORT}`);
+const start = () => {
+  initDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Fresh Cut Server running on http://localhost:${PORT}`);
+    });
+  }).catch(err => {
+    console.error('Failed to initialize database:', err);
   });
-}).catch(err => {
-  console.error('Failed to initialize database:', err);
-});
+};
+
+if (require.main === module) {
+  start();
+}
+
+module.exports = { app, start };

@@ -7,8 +7,12 @@
     "dev": "vite",
     "server": "npm start --prefix server",
     "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
-    "build": "npm install --prefix server && vite build",
+    "setup": "npm install && npm install --prefix server",
+    "build": "vite build",
+    "build:all": "npm install --prefix server && vite build",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "npm test --prefix server",
     "preview": "vite preview"
   },
   "dependencies": {

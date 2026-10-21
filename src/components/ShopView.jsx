@@ -1,19 +1,17 @@
-import React from 'react';
-
 export default function ShopView({ products, loading, addToCart, queueCount }) {
   return (
     <div className="view">
       <div className="hero">
-        <h1>Rahim's Chicken<br /><em>Premium Gourmet Cuts</em></h1>
+        <h1>Rahim&apos;s Chicken<br /><em>Premium Gourmet Cuts</em></h1>
         <p>Order luxury, farm-raised raw chicken online. Expertly prepared for pickup.</p>
         <div className="queue-badge">
           <span className="queue-dot"></span>
-          <span>Shop open · <strong>{queueCount}</strong> {queueCount === 1 ? 'order' : 'orders'} ahead in queue</span>
+          <span>Shop open &middot; <strong>{queueCount}</strong> {queueCount === 1 ? 'order' : 'orders'} ahead in queue</span>
         </div>
       </div>
 
       <div className="section">
-        <div className="section-title">Today's Premium Cuts</div>
+        <div className="section-title">Today&apos;s Premium Cuts</div>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--muted)' }}>
             Loading fresh cuts...

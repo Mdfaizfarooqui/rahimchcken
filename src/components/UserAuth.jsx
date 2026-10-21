@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export default function UserAuth({ onUserAuth, initialMode = 'login' }) {
   const [mode, setMode] = useState(initialMode); // 'login' or 'register'
@@ -33,7 +33,7 @@ export default function UserAuth({ onUserAuth, initialMode = 'login' }) {
       } else {
         setError(data.error || 'Authentication failed. Please try again.');
       }
-    } catch (err) {
+    } catch {
       setError('Network error. Unable to connect to server.');
     } finally {
       setLoading(false);
